@@ -35,6 +35,12 @@ application {
     mainClassName = "org.jlleitschuh.testing.server.AppKt"
 }
 
+tasks.register("stage") {
+    description = "Task executed by heroku to build this gradle project for deployment."
+    group = "heroku"
+    dependsOn("installDist")
+}
+
 tasks.withType<Wrapper>().configureEach {
     gradleVersion = "5.0"
     distributionType = Wrapper.DistributionType.ALL
