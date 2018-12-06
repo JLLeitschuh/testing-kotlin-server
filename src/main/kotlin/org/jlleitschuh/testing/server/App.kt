@@ -3,6 +3,27 @@
  */
 package org.jlleitschuh.testing.server
 
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.int
+import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.application.log
+import io.ktor.features.CallLogging
+import io.ktor.features.Compression
+import io.ktor.features.DefaultHeaders
+import io.ktor.features.origin
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.RequestConnectionPoint
+import io.ktor.response.respond
+import io.ktor.routing.get
+import io.ktor.routing.routing
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import org.slf4j.event.Level
+
 class App {
     val greeting: String
         get() {
@@ -10,6 +31,71 @@ class App {
         }
 }
 
-fun main(args: Array<String>) {
-    println(App().greeting)
+data class OriginInfo(
+    override val host: String,
+    override val method: HttpMethod,
+    override val port: Int,
+    override val remoteHost: String,
+    override val scheme: String,
+    override val uri: String,
+    override val version: String
+) : RequestConnectionPoint {
+
+    constructor(requestConnectionPoint: RequestConnectionPoint) :
+        this(
+            host = requestConnectionPoint.host,
+            method = requestConnectionPoint.method,
+            port = requestConnectionPoint.port,
+            remoteHost = requestConnectionPoint.remoteHost,
+            scheme = requestConnectionPoint.scheme,
+            uri = requestConnectionPoint.uri,
+            version = requestConnectionPoint.version
+        )
 }
+
+private fun run(port: Int) {
+    println("Launching on port `$port`")
+    val server = embeddedServer(Netty, port) {
+        install(DefaultHeaders)
+        install(Compression)
+        install(CallLogging) {
+            level = Level.INFO
+        }
+        routing {
+            get("/*") {
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK)
+            }
+            get("") {
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+    }
+    server.start()
+}
+
+/**
+ * Launches the application and handles the args passed to [main].
+ */
+class Launcher : CliktCommand(
+    name = "ktor-sample-swagger"
+) {
+    companion object {
+        private const val defaultPort = 8080
+    }
+
+    private val port: Int by option(
+        "-p",
+        "--port",
+        help = "The port that this server should be started on. Defaults to $defaultPort."
+    )
+        .int()
+        .default(defaultPort)
+
+    override fun run() {
+        run(port)
+    }
+}
+
+fun main(args: Array<String>) = Launcher().main(args)

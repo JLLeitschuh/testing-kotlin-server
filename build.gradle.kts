@@ -1,20 +1,20 @@
 plugins {
-    // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM
     id("org.jetbrains.kotlin.jvm").version("1.3.10")
-
-    // Apply the application to add support for building a CLI application
+    id("com.diffplug.gradle.spotless") version "3.16.0"
     application
 }
 
 repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     jcenter()
 }
 
 dependencies {
     // Use the Kotlin JDK 8 standard library
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    val ktorVersion = "1.0.1"
+    implementation(group = "io.ktor", name = "ktor-server-netty", version = ktorVersion)
+    implementation(group = "com.github.ajalt", name = "clikt", version = "1.3.0")
+    implementation(group = "ch.qos.logback", name = "logback-classic", version = "1.0.13")
 
     // Use the Kotlin test library
     testImplementation("org.jetbrains.kotlin:kotlin-test")
@@ -23,8 +23,15 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
 
+spotless {
+    kotlin {
+        ktlint("0.29.0")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
 application {
-    // Define the main class for the application
     mainClassName = "org.jlleitschuh.testing.server.AppKt"
 }
 
