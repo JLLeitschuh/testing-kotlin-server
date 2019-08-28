@@ -55,11 +55,13 @@ data class OriginInfo(
         )
 }
 
+fun ApplicationCall.referer() = request.header(HttpHeaders.Referrer)?.let { URI.create(it) }
+
 /**
  * Obtains the [refererHost] from the [HttpHeaders.Referrer] header, to check it to prevent CSRF attacks
  * from other domains.
  */
-fun ApplicationCall.refererHost() = request.header(HttpHeaders.Referrer)?.let { URI.create(it).host }
+fun ApplicationCall.refererHost() = referer()?.host
 
 val maliciousDtd = """
 
@@ -163,12 +165,12 @@ private fun run(port: Int) {
         routing {
             get("/*") {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
-                log.info("Referer: ${call.refererHost()}")
+                log.info("Referer: ${call.referer()}")
                 call.respond(HttpStatusCode.OK)
             }
             get("") {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
-                log.info("Referer: ${call.refererHost()}")
+                log.info("Referer: ${call.referer()}")
                 call.respond(HttpStatusCode.OK)
             }
             get("dtds/configuration_1_3.dtd") {
