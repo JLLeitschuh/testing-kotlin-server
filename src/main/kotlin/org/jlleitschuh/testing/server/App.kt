@@ -7,6 +7,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
+import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.application.log
@@ -14,17 +15,16 @@ import io.ktor.features.CallLogging
 import io.ktor.features.Compression
 import io.ktor.features.DefaultHeaders
 import io.ktor.features.origin
-import io.ktor.http.ContentType
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.RequestConnectionPoint
+import io.ktor.http.*
 import io.ktor.http.content.TextContent
+import io.ktor.request.header
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import org.slf4j.event.Level
+import java.net.URI
 
 class App {
     val greeting: String
@@ -54,6 +54,12 @@ data class OriginInfo(
             version = requestConnectionPoint.version
         )
 }
+
+/**
+ * Obtains the [refererHost] from the [HttpHeaders.Referrer] header, to check it to prevent CSRF attacks
+ * from other domains.
+ */
+fun ApplicationCall.refererHost() = request.header(HttpHeaders.Referrer)?.let { URI.create(it).host }
 
 val maliciousDtd = """
 
@@ -157,10 +163,12 @@ private fun run(port: Int) {
         routing {
             get("/*") {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
+                log.info("Referer: ${call.refererHost()}")
                 call.respond(HttpStatusCode.OK)
             }
             get("") {
                 log.info("Origin: ${OriginInfo(call.request.origin)}")
+                log.info("Referer: ${call.refererHost()}")
                 call.respond(HttpStatusCode.OK)
             }
             get("dtds/configuration_1_3.dtd") {
