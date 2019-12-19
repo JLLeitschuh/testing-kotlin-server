@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import io.ktor.application.ApplicationCall
+import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -186,24 +187,26 @@ private fun run(port: Int) {
             retrieveFromHeader("X-Request-ID")
             retrieve { UUID.randomUUID().toString() }
         }
+        intercept(ApplicationCallPipeline.Call) {
+            logRequestInfo()
+        }
+        intercept(ApplicationCallPipeline.Fallback) {
+            logRequestInfo()
+        }
         routing {
             get("/*") {
-                logRequestInfo()
                 call.respond(HttpStatusCode.OK)
             }
             get("") {
-                logRequestInfo()
                 call.respond(HttpStatusCode.OK)
             }
             get("dtds/configuration_1_3.dtd") {
-                logRequestInfo()
                 call.respond(HttpStatusCode.OK, TextContent(
                     configuationDtd,
                     contentType = ContentType.Application.Xml_Dtd
                 ))
             }
             get("/dtds/suppressions_1_2.dtd") {
-                logRequestInfo()
                 call.respond(HttpStatusCode.OK, TextContent(
                     suppressionDtd,
                     contentType = ContentType.Application.Xml_Dtd
