@@ -168,7 +168,7 @@ private fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
             append("Call ID: ${call.callId}").append('\n')
             append("\tOrigin: ${OriginInfo(call.request.origin)}").append('\n')
             append("\tReferer: ${call.referer()}").append('\n')
-            append("\tAuthorization: ${call.request.authorization()}")
+            append("\tAuthorization: ${call.request.authorization()}").append('\n')
             append("\tHeaders:").append('\n')
             call.request.headers.forEach { key, values ->
                 append("\t\t$key: ${values.joinToString()}").append('\n')
