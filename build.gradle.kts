@@ -13,6 +13,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     val ktorVersion = "1.0.1"
     implementation(group = "io.ktor", name = "ktor-server-netty", version = ktorVersion)
+    implementation(group = "io.ktor", name = "ktor-auth", version = ktorVersion)
     implementation(group = "com.github.ajalt", name = "clikt", version = "1.3.0")
     implementation(group = "ch.qos.logback", name = "logback-classic", version = "1.0.13")
 

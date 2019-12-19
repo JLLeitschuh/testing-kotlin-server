@@ -13,6 +13,7 @@ import io.ktor.application.application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.application.log
+import io.ktor.auth.parseAuthorizationHeader
 import io.ktor.features.CallId
 import io.ktor.features.CallLogging
 import io.ktor.features.Compression
@@ -21,6 +22,7 @@ import io.ktor.features.callId
 import io.ktor.features.origin
 import io.ktor.http.*
 import io.ktor.http.content.TextContent
+import io.ktor.request.authorization
 import io.ktor.request.header
 import io.ktor.response.respond
 import io.ktor.routing.get
@@ -166,6 +168,7 @@ private fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
             append("Call ID: ${call.callId}").append('\n')
             append("\tOrigin: ${OriginInfo(call.request.origin)}").append('\n')
             append("\tReferer: ${call.referer()}").append('\n')
+            append("\tAuthorization: ${call.request.authorization()}")
             append("\tHeaders:").append('\n')
             call.request.headers.forEach { key, values ->
                 append("\t\t$key: ${values.joinToString()}").append('\n')
