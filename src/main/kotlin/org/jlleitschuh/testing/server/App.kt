@@ -8,12 +8,15 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import io.ktor.application.ApplicationCall
+import io.ktor.application.application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.application.log
+import io.ktor.features.CallId
 import io.ktor.features.CallLogging
 import io.ktor.features.Compression
 import io.ktor.features.DefaultHeaders
+import io.ktor.features.callId
 import io.ktor.features.origin
 import io.ktor.http.*
 import io.ktor.http.content.TextContent
@@ -23,8 +26,10 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.util.pipeline.PipelineContext
 import org.slf4j.event.Level
 import java.net.URI
+import java.util.*
 
 class App {
     val greeting: String
@@ -154,6 +159,21 @@ val suppressionDtd = """
 $maliciousDtd
 """.trimIndent()
 
+private fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
+    application.run {
+        val loggedInfo = buildString {
+            append("Call ID: ${call.callId}").append('\n')
+            append("\tOrigin: ${OriginInfo(call.request.origin)}").append('\n')
+            append("\tReferer: ${call.referer()}").append('\n')
+            append("\tHeaders:").append('\n')
+            call.request.headers.forEach { key, values ->
+                append("\t\t$key: ${values.joinToString()}").append('\n')
+            }
+        }
+        log.info(loggedInfo)
+    }
+}
+
 private fun run(port: Int) {
     println("Launching on port `$port`")
     val server = embeddedServer(Netty, port) {
@@ -162,28 +182,28 @@ private fun run(port: Int) {
         install(CallLogging) {
             level = Level.INFO
         }
+        install(CallId) {
+            retrieveFromHeader("X-Request-ID")
+            retrieve { UUID.randomUUID().toString() }
+        }
         routing {
             get("/*") {
-                log.info("Origin: ${OriginInfo(call.request.origin)}")
-                log.info("Referer: ${call.referer()}")
+                logRequestInfo()
                 call.respond(HttpStatusCode.OK)
             }
             get("") {
-                log.info("Origin: ${OriginInfo(call.request.origin)}")
-                log.info("Referer: ${call.referer()}")
+                logRequestInfo()
                 call.respond(HttpStatusCode.OK)
             }
             get("dtds/configuration_1_3.dtd") {
-                log.info("Retrieving Configuration DTD")
-                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                logRequestInfo()
                 call.respond(HttpStatusCode.OK, TextContent(
                     configuationDtd,
                     contentType = ContentType.Application.Xml_Dtd
                 ))
             }
             get("/dtds/suppressions_1_2.dtd") {
-                log.info("Retrieving Suppression DTD")
-                log.info("Origin: ${OriginInfo(call.request.origin)}")
+                logRequestInfo()
                 call.respond(HttpStatusCode.OK, TextContent(
                     suppressionDtd,
                     contentType = ContentType.Application.Xml_Dtd
