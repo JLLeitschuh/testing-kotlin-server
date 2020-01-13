@@ -22,8 +22,10 @@ import io.ktor.features.callId
 import io.ktor.features.origin
 import io.ktor.http.*
 import io.ktor.http.content.TextContent
+import io.ktor.request.ContentTransformationException
 import io.ktor.request.authorization
 import io.ktor.request.header
+import io.ktor.request.receiveText
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.routing
@@ -162,20 +164,28 @@ val suppressionDtd = """
 $maliciousDtd
 """.trimIndent()
 
-private fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
-    application.run {
-        val loggedInfo = buildString {
-            append("Call ID: ${call.callId}").append('\n')
-            append("\tOrigin: ${OriginInfo(call.request.origin)}").append('\n')
-            append("\tReferer: ${call.referer()}").append('\n')
-            append("\tAuthorization: ${call.request.authorization()}").append('\n')
-            append("\tHeaders:").append('\n')
-            call.request.headers.forEach { key, values ->
-                append("\t\t$key: ${values.joinToString()}").append('\n')
-            }
+private suspend fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
+    val loggedInfo = buildString {
+        append("Call ID: ${call.callId}").append('\n')
+        append("\tOrigin: ${OriginInfo(call.request.origin)}").append('\n')
+        append("\tReferer: ${call.referer()}").append('\n')
+        append("\tAuthorization: ${call.request.authorization()}").append('\n')
+        append("\tHeaders:").append('\n')
+        call.request.headers.forEach { key, values ->
+            append("\t\t$key: ${values.joinToString()}").append('\n')
         }
-        log.info(loggedInfo)
+        try {
+            val text = call.receiveText().split("\n")
+            append("\tText:").append('\n')
+            text.forEach { line ->
+                append("\t\t$line\n")
+            }
+        } catch (e: ContentTransformationException) {
+            // Noop
+        }
     }
+
+    application.log.info(loggedInfo)
 }
 
 private fun run(port: Int) {
