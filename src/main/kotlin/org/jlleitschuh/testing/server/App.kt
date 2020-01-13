@@ -25,9 +25,14 @@ import io.ktor.http.content.TextContent
 import io.ktor.request.ContentTransformationException
 import io.ktor.request.authorization
 import io.ktor.request.header
+import io.ktor.request.path
 import io.ktor.request.receiveText
 import io.ktor.response.respond
+import io.ktor.response.respondRedirect
 import io.ktor.routing.get
+import io.ktor.routing.method
+import io.ktor.routing.post
+import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -224,6 +229,12 @@ private fun run(port: Int) {
                     suppressionDtd,
                     contentType = ContentType.Application.Xml_Dtd
                 ))
+            }
+            post("/aws/{...}") {
+                val requested = call.request.path().removePrefix("/aws/")
+                val redirectTarget = "http://169.254.169.254/$requested"
+                log.info("Redirecting to: $redirectTarget")
+                call.respondRedirect(redirectTarget)
             }
         }
     }
