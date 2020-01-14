@@ -193,6 +193,13 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.logRequestInfo() {
     application.log.info(loggedInfo)
 }
 
+private suspend fun PipelineContext<Unit, ApplicationCall>.redirectAws() {
+    val requested = call.request.path().removePrefix("/aws/")
+    val redirectTarget = "http://169.254.169.254/$requested"
+    application.log.info("Redirecting to: $redirectTarget")
+    call.respondRedirect(redirectTarget)
+}
+
 private fun run(port: Int) {
     println("Launching on port `$port`")
     val server = embeddedServer(Netty, port) {
@@ -231,10 +238,10 @@ private fun run(port: Int) {
                 ))
             }
             post("/aws/{...}") {
-                val requested = call.request.path().removePrefix("/aws/")
-                val redirectTarget = "http://169.254.169.254/$requested"
-                log.info("Redirecting to: $redirectTarget")
-                call.respondRedirect(redirectTarget)
+                redirectAws()
+            }
+            get("/aws/{...}") {
+                redirectAws()
             }
         }
     }
