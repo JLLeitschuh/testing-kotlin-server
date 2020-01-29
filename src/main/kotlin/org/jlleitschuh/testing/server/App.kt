@@ -200,6 +200,13 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.redirectAws() {
     call.respondRedirect(redirectTarget)
 }
 
+private suspend fun PipelineContext<Unit, ApplicationCall>.redirectFileRoot() {
+    val requested = call.request.path().removePrefix("/file-root/")
+    val redirectTarget = "file:///$requested"
+    application.log.info("Redirecting to: $redirectTarget")
+    call.respondRedirect(redirectTarget)
+}
+
 private fun run(port: Int) {
     println("Launching on port `$port`")
     val server = embeddedServer(Netty, port) {
@@ -242,6 +249,12 @@ private fun run(port: Int) {
             }
             get("/aws/{...}") {
                 redirectAws()
+            }
+            post("/file-root/{...}") {
+                redirectFileRoot()
+            }
+            get("/file-root/{...}") {
+                redirectFileRoot()
             }
         }
     }
